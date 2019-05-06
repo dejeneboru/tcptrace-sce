@@ -136,7 +136,12 @@ char *text_color	= "magenta";
 char *default_color	= "white";
 char *synfin_color	= "orange";
 char *push_color	= "white";	/* top arrow for PUSHed segments */
-char *ecn_color		= "yellow";
+char *ecn_color		= "white";
+char *ecn_ce_color	= "red";
+char *ecn_ece_color	= "blue";
+char *ecn_cwr_color	= "green";
+char *ecn_sce_color	= "yellow";
+char *ecn_esce_color	= "orange";
 char *urg_color		= "red";
 char *probe_color       = "orange";
 char *a2b_seg_color     = "green";     /* colors for segments on the time line chart */
@@ -1400,7 +1405,7 @@ dotrace(
     Bool	hw_reorder = FALSE;	/* IP-level reordering */
     Bool	ect0 = FALSE, ect1 = FALSE;
     Bool	ecn_ce = FALSE;
-    Bool	ecn_echo = FALSE, cwr = FALSE, ecn_ns = FALSE;
+    Bool	ecn_echo = FALSE, cwr = FALSE, esce = FALSE;
     Bool        urg = FALSE;
     Bool	ptrunc = FALSE;
     int		retrans_num_bytes;
@@ -1806,7 +1811,7 @@ dotrace(
 	ect1 = !(tc & IPTOS_ECT) && tc & IPTOS_CE;
 	ecn_ce = tc & IPTOS_ECT && tc & IPTOS_CE;
     }
-    ecn_ns = NS_SET(ptcp);
+    esce = NS_SET(ptcp);
     cwr = CWR_SET(ptcp);
     ecn_echo = ECN_ECHO_SET(ptcp);
 
@@ -2325,7 +2330,10 @@ nextrpc:
 	    } else
 	    /* Kevin Lahey's code */
 	    if (cwr || ecn_ce) {
-		plotter_perm_color(from_tsgpl, ecn_color);
+		if (cwr)
+		    plotter_perm_color(from_tsgpl, ecn_cwr_color);
+		else
+		    plotter_perm_color(from_tsgpl, ecn_ce_color);
 		plotter_diamond(from_tsgpl,
 			    current_time, SeqRep(thisdir,start));
 		plotter_text(from_tsgpl, current_time, SeqRep(thisdir, start), "b",
@@ -2336,22 +2344,25 @@ nextrpc:
 		plotter_temp_color(from_tsgpl, ecn_color);
 		plotter_text(from_tsgpl, current_time, SeqRep(thisdir, start), "bl", "ECN  ");
 	    }
-	    if (cwr || ecn_ce || ect0 || ect1) {
-		plotter_perm_color(from_tsgpl, ecn_color);
+	    if (cwr || ecn_ce || ect1) {
+		plotter_perm_color(from_tsgpl,
+			cwr
+			? ecn_ce
+			  ? ecn_ce_color
+			  : ecn_cwr_color
+			: ecn_ce
+			  ? ecn_ce_color
+			  : ecn_sce_color);
 		plotter_text(from_tsgpl, current_time, SeqRep(thisdir, start), "b",
-			 cwr
-			 ? ecn_ce
-			   ? "CWR CE"
-			   : ect0
-			     ? "CWR ECT(0)"
-			     : ect1
-			       ? "CWR ECT(1)"
-			       : "CWR"
-			 : ecn_ce
-			   ? "CE"
-			   : ect0
-			     ? "ECT(0)"
-			     : "ECT(1)");
+			cwr
+			? ecn_ce
+			  ? "CWR CE"
+			  : ect1
+			    ? "CWR ECT(1)"
+			    : "CWR"
+			: ecn_ce
+			  ? "CE"
+			    : "SCE   ");
 	    }
 	}
        
@@ -2679,7 +2690,7 @@ nextrpc:
 		     "b", "HO");
 	    }
 
-	    if (show_ect && ecn_echo && ecn_ns && cwr) {
+	    if (show_ect && ecn_echo && esce && cwr) {
 		if (SYN_SET(ptcp) && !ACK_SET(ptcp)) {
 		    plotter_perm_color(to_tsgpl, ecn_color);
 		    plotter_text(to_tsgpl, current_time, SeqRep(otherdir,ack),
@@ -2688,16 +2699,16 @@ nextrpc:
 	    } else {
 		/* Kevin Lahey's code */
 		if (ecn_echo && (!SYN_SET(ptcp) || show_ect)) {
-		    plotter_perm_color(to_tsgpl, ecn_color);
+		    plotter_perm_color(to_tsgpl, ecn_ece_color);
 		    plotter_diamond(to_tsgpl, current_time, SeqRep(otherdir, ack));
 		    if (show_ect)
 			plotter_text(to_tsgpl, current_time, SeqRep(otherdir,ack),
-			 "b", "ECE");
+			 "b", "     ECE");
 		}
-		if (ecn_ns && show_ect) {
-		    plotter_perm_color(to_tsgpl, ecn_color);
+		if (esce && show_ect) {
+		    plotter_perm_color(to_tsgpl, ecn_esce_color);
 		    plotter_text(to_tsgpl, current_time, SeqRep(otherdir,ack),
-			 "b", "ECN_NS");
+			 "b", "ESCE     ");
 		}
 	    }
 
