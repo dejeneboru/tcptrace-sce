@@ -1,0 +1,5 @@
+Ideas
+
+- add flow-number tracking
+- wireshark callout with display-filter for flow number
+- clicky-action command from cmdline, with substituted parameters
